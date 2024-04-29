@@ -100,9 +100,9 @@ def format_time(seconds):
 
 def categorize_password_entropy(entropy):
     """Categorize the password based on its entropy value into weak, medium, or strong."""
-    if entropy < 50:
+    if entropy < 30:
         return "weak", "Your password is weak and could be easily guessed by attackers."
-    elif 50 <= entropy < 70:
+    elif 30 <= entropy < 60:
         return "medium", "Your password is medium strength, suitable for general use."
     else:
         return "strong", "Your password is strong and well-suited for securing sensitive data."
