@@ -9,17 +9,29 @@ app = Flask(__name__)
 # Load the entropy distribution at the start
 entropy_distribution = []
 
+# Global variable to store the common words dictionary
+common_words_dictionary = {}
+
+
+def init_dictionary():
+    global common_words_dictionary
+    common_words_dictionary = password_metrics.load_dictionary(
+        '/Users/scott/Documents/Development/Github/PassChecker/passwords/dictionary.txt')
+
 
 def load_entropy_distribution():
     try:
-        with open('/Users/scott/Documents/Development/Github/PassChecker/passwords/entropy_distribution.txt', 'r') as file:
+        with open('/Users/scott/Documents/Development/Github/PassChecker/passwords/entropy_distribution.txt',
+                  'r') as file:
             global entropy_distribution
             entropy_distribution = [float(line.strip()) for line in file]
     except FileNotFoundError:
         print("Entropy distribution file not found. Please generate it first.")
 
 
-load_entropy_distribution()  # Call this function on startup
+# Call these functions on startup
+load_entropy_distribution()
+init_dictionary()
 
 
 def calculate_strength_percentile(entropy, distribution):
@@ -45,21 +57,20 @@ def index():
         strength_ok, strength_message = strength_checker.check_password_strength(password)
         common_ok, common_message = strength_checker.check_common_passwords(password, common_passwords)
 
-        entropy = password_metrics.calculate_entropy(password)
+        entropy = password_metrics.calculate_entropy(password, common_words_dictionary)
         seconds = password_metrics.time_to_crack(entropy)
         time_estimate = password_metrics.format_time(seconds)
 
-        # Use the loaded entropy distribution
         if entropy_distribution:
             position = calculate_strength_percentile(entropy, entropy_distribution)
             percentile = calculate_percentile(position, len(entropy_distribution))
-        else:
-            message = "Entropy distribution not available."
 
-        if not strength_ok or not common_ok:
-            message = strength_message if not strength_ok else common_message
+        if not common_ok:
+            message = common_message
+        elif not strength_ok:
+            message = strength_message
         else:
-            message += f" Your password is strong and uncommon. It would take approximately {time_estimate} to crack. It is stronger than {percentile:.2f}% of common passwords."
+            message = f"Your password is strong and uncommon. It would take approximately {time_estimate} to crack. It is stronger than {percentile:.2f}% of common passwords."
 
     return render_template('index.html', message=message, time_estimate=time_estimate, percentile=f"{percentile:.2f}%")
 

@@ -17,6 +17,12 @@
         <input type="submit" value="Check Password">
     </form>
     <p>{{ message }}</p>
+    {% if time_estimate %}
+        <p>Time to Crack: {{ time_estimate }}</p>
+    {% endif %}
+    {% if percentile %}
+        <p>Strength Percentile: {{ percentile }}</p>
+    {% endif %}
 
     <script>
         function togglePasswordVisibility() {
