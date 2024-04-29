@@ -16,15 +16,12 @@ def load_dictionary(file_path='/Users/scott/Documents/Development/Github/PassChe
         return set()
 
 
-import math
-import re
-
-
 def calculate_entropy(password, dictionary):
     """Calculate refined entropy considering dictionary words and character diversity, with debugging."""
     if not password:
         return 0
 
+    # Calculate charset size based on character diversity in the password
     charset_size = sum([
         26 if re.search(r'[a-z]', password) else 0,
         26 if re.search(r'[A-Z]', password) else 0,
@@ -32,32 +29,55 @@ def calculate_entropy(password, dictionary):
         32 if re.search(r'[!@#$%^&*(),.?":{}|<>]', password) else 0
     ])
 
+    # Initial entropy calculation based on charset size and password length
     basic_entropy = math.log2(max(1, charset_size)) * len(password)
-    print(f"Initial Entropy: {basic_entropy}")  # Debugging initial entropy
+    print(f"Initial Entropy: {basic_entropy:.2f}")  # Debugging initial entropy
 
-    # To handle overlapping and multiple reductions, track all possible word contributions
+    # Track all valid reductions due to dictionary words
     word_contributions = []
     for word in dictionary:
-        if word in password.lower():
-            word_len = len(word)
-            coverage = word_len / len(password)
-            reduction = coverage * basic_entropy * 0.5  # Proportional reduction
-            word_contributions.append((word, reduction))
-            print(f"Identified '{word}' in password, proposing reduction: {reduction}")  # Debugging word reduction
+        start_index = 0
+        while True:
+            start_index = password.lower().find(word, start_index)
+            if start_index == -1:
+                break  # No more occurrences of the word
+            end_index = start_index + len(word)
 
-    # Apply the maximum reduction from identified words
+            # Calculate the potential reduction based on the word's coverage
+            coverage = len(word) / len(password)
+            reduction = coverage * basic_entropy * 0.5  # Proportional reduction
+            word_contributions.append((word, start_index, end_index, reduction))
+
+            print(
+                f"Identified '{word}' at positions {start_index}-{end_index}, proposing reduction: {reduction:.2f}")  # Debugging word reduction
+
+            start_index += 1  # Move start index forward to continue searching
+
+    # Apply the maximum reduction for non-overlapping words sorted by their impact
     if word_contributions:
-        max_reduction = max(word_contributions, key=lambda x: x[1])[1]
-        print(f"Applying maximum reduction: {max_reduction}")  # Debugging max reduction
-        basic_entropy -= max_reduction
+        # Sort contributions by start position and length (prioritize longer and earlier found words)
+        word_contributions.sort(key=lambda x: (x[1], -x[2] + x[1]))
+        applied_reductions = []
+
+        # Apply reductions making sure not to double-count overlapping regions
+        last_end = -1
+        for word, start, end, reduction in word_contributions:
+            if start >= last_end:  # Ensure no overlap with previously applied reduction
+                applied_reductions.append(reduction)
+                last_end = end  # Update last applied word end position
+                print(f"Applying reduction for '{word}': {reduction:.2f}")  # Debugging applied reductions
+
+        total_reduction = sum(applied_reductions)
+        print(f"Total reductions applied: {total_reduction:.2f}")  # Debugging total reductions
+        basic_entropy -= total_reduction
 
     adjusted_entropy = max(1, basic_entropy)  # Ensure a minimal entropy
-    print(f"Adjusted Entropy: {adjusted_entropy}")  # Debugging adjusted entropy
+    print(f"Adjusted Entropy: {adjusted_entropy:.2f}")  # Debugging adjusted entropy
     return adjusted_entropy
 
 
 def time_to_crack(entropy):
-    guesses_per_second = 1e13
+    guesses_per_second = 1e11
     seconds = max(1, (2 ** entropy) / guesses_per_second)
     print(f"Entropy: {entropy}, Seconds: {seconds}")  # Debugging
     return seconds
@@ -76,6 +96,16 @@ def format_time(seconds):
     else:
         years = seconds / 31536000
         return f"{years:.2f} years"
+
+
+def categorize_password_entropy(entropy):
+    """Categorize the password based on its entropy value into weak, medium, or strong."""
+    if entropy < 50:
+        return "weak", "Your password is weak and could be easily guessed by attackers."
+    elif 50 <= entropy < 70:
+        return "medium", "Your password is medium strength, suitable for general use."
+    else:
+        return "strong", "Your password is strong and well-suited for securing sensitive data."
 
 
 def calculate_strength_percentile(entropy, distribution):

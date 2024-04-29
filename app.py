@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request
 
 from passwords import strength_checker
+from passwords.password_metrics import categorize_password_entropy
 from passwords.strength_checker import check_password_strength, load_common_passwords, check_common_passwords
 from passwords import password_metrics
 
@@ -50,6 +51,7 @@ def calculate_percentile(position, total_items):
 def index():
     message = ''
     time_estimate = ''
+    strength_label = ''
     percentile = 0.0  # Initialize percentile as a float
     if request.method == 'POST':
         password = request.form['password']
@@ -61,6 +63,8 @@ def index():
         seconds = password_metrics.time_to_crack(entropy)
         time_estimate = password_metrics.format_time(seconds)
 
+        strength_label, message = categorize_password_entropy(entropy)
+
         if entropy_distribution:
             position = calculate_strength_percentile(entropy, entropy_distribution)
             percentile = calculate_percentile(position, len(entropy_distribution))
@@ -70,9 +74,10 @@ def index():
         elif not strength_ok:
             message = strength_message
         else:
-            message = f"Your password is strong and uncommon. It would take approximately {time_estimate} to crack. It is stronger than {percentile:.2f}% of common passwords."
+            message = (f"Your password is strong and uncommon. It would take approximately {time_estimate} to crack. "
+                       f"It is stronger than {percentile:.2f}% of common passwords.")
 
-    return render_template('index.html', message=message, time_estimate=time_estimate, percentile=f"{percentile:.2f}%")
+    return render_template('index.html', message=message, time_estimate=time_estimate, strength_label=strength_label, percentile=f"{percentile:.2f}%")
 
 
 if __name__ == '__main__':

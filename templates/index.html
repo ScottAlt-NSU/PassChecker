@@ -20,10 +20,7 @@
     {% if time_estimate %}
         <p>Time to Crack: {{ time_estimate }}</p>
     {% endif %}
-    {% if percentile %}
-        <p>Strength Percentile: {{ percentile }}</p>
-    {% endif %}
-
+    <p>Password Strength: <strong>{{ strength_label }}</strong></p>
     <script>
         function togglePasswordVisibility() {
             var passwordInput = document.getElementById('password');
