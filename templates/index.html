@@ -3,17 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Strength Checker</title>
+    <title>Password Checker</title>
 </head>
 <body>
-    <h1>Password Strength Checker</h1>
-    <form method="post">
-        <label for="password">Enter your password:</label>
+    <h1>Check Your Password Strength</h1>
+    <form method="POST">
+        <label for="password">Password:</label>
         <input type="password" id="password" name="password" required>
-        <button type="submit">Check Password</button>
+        <br><br>
+        <label for="show_password">Show Password:</label>
+        <input type="checkbox" id="show_password" onclick="togglePasswordVisibility()">
+        <br><br>
+        <input type="submit" value="Check Password">
     </form>
-    {% if message %}
     <p>{{ message }}</p>
-    {% endif %}
+
+    <script>
+        function togglePasswordVisibility() {
+            var passwordInput = document.getElementById('password');
+            var passwordCheckbox = document.getElementById('show_password');
+            if (passwordCheckbox.checked) {
+                passwordInput.type = 'text';
+            } else {
+                passwordInput.type = 'password';
+            }
+        }
+    </script>
 </body>
 </html>
